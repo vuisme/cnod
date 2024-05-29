@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiểm kê đơn hàng</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f2f2f2;
+        }
+        .input-container {
+            margin-bottom: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            resize: none;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        .summary-table {
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        .summary-table th, .summary-table td {
+            background-color: #f2f2f2;
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="input-container">
+        <textarea id="dataInput" placeholder="Paste your data here..."></textarea>
+        <button onclick="processData()">Kiểm kê</button>
+    </div>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>STT</th>
+                <th>Mã đơn hàng</th>
+                <th>Trọng lượng</th>
+                <th>Chọn</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be added here dynamically -->
+        </tbody>
+    </table>
+
+    <table id="summaryTable" class="summary-table">
+        <thead>
+            <tr>
+                <th>STT</th>
+                <th>Mã đơn hàng</th>
+                <th>Trọng lượng</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Summary rows will be added here dynamically -->
+        </tbody>
+    </table>
+
+    <script>
+        let summaryIndex = 1;
+
+        function processData() {
+            const data = document.getElementById('dataInput').value;
+            const lines = data.split('\n');
+            const dataTableBody = document.getElementById('dataTable').querySelector('tbody');
+            let summaryTableBody = document.getElementById('summaryTable').querySelector('tbody');
+
+            dataTableBody.innerHTML = ''; // Clear existing rows
+            if (!summaryTableBody) {
+                const summaryTable = document.getElementById('summaryTable');
+                summaryTableBody = document.createElement('tbody');
+                summaryTable.appendChild(summaryTableBody);
+            } else {
+                summaryTableBody.innerHTML = ''; // Clear existing rows
+            }
+
+            let index = 1;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.length === 0) continue;
+
+                const parts = line.split('\t');
+                if (parts.length === 4) {
+                    const orderID = parts[1];
+                    const weight = parts[3];
+
+                    addRowToTable(index++, orderID, weight, dataTableBody, summaryTableBody);
+                }
+            }
+        }
+
+        function addRowToTable(index, orderID, weight, dataTableBody, summaryTableBody) {
+            const row = document.createElement('tr');
+
+            // Create index cell
+            const indexCell = document.createElement('td');
+            indexCell.textContent = index;
+            row.appendChild(indexCell);
+
+            // Create order ID cell
+            const orderIDCell = document.createElement('td');
+            orderIDCell.textContent = orderID;
+            row.appendChild(orderIDCell);
+
+            // Create weight cell
+            const weightCell = document.createElement('td');
+            weightCell.textContent = weight;
+            row.appendChild(weightCell);
+
+            // Create checkbox cell
+            const checkboxCell = document.createElement('td');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    row.remove();
+                    addToSummaryTable(orderID, weight);
+                }
+            });
+            checkboxCell.appendChild(checkbox);
+            row.appendChild(checkboxCell);
+
+            // Append row to data table
+            dataTableBody.appendChild(row);
+        }
+
+        function addToSummaryTable(orderID, weight) {
+            const summaryTableBody = document.getElementById('summaryTable').querySelector('tbody');
+            const row = document.createElement('tr');
+
+            // Create index cell
+            const indexCell = document.createElement('td');
+            indexCell.textContent = summaryIndex++;
+            row.appendChild(indexCell);
+
+            // Create order ID cell
+            const orderIDCell = document.createElement('td');
+            orderIDCell.textContent = orderID;
+            row.appendChild(orderIDCell);
+
+            // Create weight cell
+            const weightCell = document.createElement('td');
+            weightCell.textContent = weight;
+            row.appendChild(weightCell);
+
+            // Append row to summary table
+            summaryTableBody.appendChild(row);
+
+            // Display summary table
+            document.getElementById('summaryTable').style.display = 'table';
+        }
+    </script>
+</body>
+</html>
