@@ -101,34 +101,55 @@
         let summaryIndex = 1;
 
         function processData() {
-            const data = document.getElementById('dataInput').value;
-            const lines = data.split('\n');
-            const dataTableBody = document.getElementById('dataTable').querySelector('tbody');
-            let summaryTableBody = document.getElementById('summaryTable').querySelector('tbody');
+			const data = document.getElementById('dataInput').value;
+			const lines = data.split('\n');
+			const dataTableBody = document.getElementById('dataTable').querySelector('tbody');
+			let summaryTableBody = document.getElementById('summaryTable').querySelector('tbody');
 
-            dataTableBody.innerHTML = ''; // Clear existing rows
-            if (!summaryTableBody) {
-                const summaryTable = document.getElementById('summaryTable');
-                summaryTableBody = document.createElement('tbody');
-                summaryTable.appendChild(summaryTableBody);
-            } else {
-                summaryTableBody.innerHTML = ''; // Clear existing rows
-            }
+			dataTableBody.innerHTML = ''; // Clear existing rows
+			if (!summaryTableBody) {
+				const summaryTable = document.getElementById('summaryTable');
+				summaryTableBody = document.createElement('tbody');
+				summaryTable.appendChild(summaryTableBody);
+			} else {
+				summaryTableBody.innerHTML = ''; // Clear existing rows
+			}
 
-            let index = 1;
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (line.length === 0) continue;
+			let index = 1;
+			let packageID = ''; // To keep track of package ID for the current batch of items
+			let weight = 0; // To keep track of total weight for the current batch of items
 
-                const parts = line.split('\t');
-                if (parts.length === 4) {
-                    const orderID = parts[1];
-                    const weight = parts[3];
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i].trim();
+				if (line.length === 0) continue;
 
-                    addRowToTable(index++, orderID, weight, dataTableBody, summaryTableBody);
-                }
-            }
-        }
+				// Check if the line contains '# Thông tin kiện' to determine the type of data
+				if (line.startsWith('# Thông tin kiện')) {
+					// If it's package information, reset the packageID and weight
+					packageID = '';
+					weight = 0;
+				} else {
+					// If it's order information or package details, parse and process accordingly
+					const parts = line.split(': ');
+					if (parts.length === 2) {
+						const key = parts[0].trim();
+						const value = parts[1].trim();
+
+						if (key === 'Mã kiện') {
+							packageID = value;
+						} else if (key === 'Cân nặng') {
+							weight += parseFloat(value.split(' ')[0]);
+						}
+
+						// If it's the last line of package details, add it to the table
+						if (key === 'Cân nặng') {
+							addRowToTable(index++, packageID, value, dataTableBody, summaryTableBody);
+						}
+					}
+				}
+			}
+		}
+
 
         function addRowToTable(index, orderID, weight, dataTableBody, summaryTableBody) {
             const row = document.createElement('tr');
