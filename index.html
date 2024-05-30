@@ -100,76 +100,71 @@
     <script>
         let summaryIndex = 1;
 
+        document.addEventListener('DOMContentLoaded', loadStoredData);
+
         function processData() {
-			const data = document.getElementById('dataInput').value;
-			const lines = data.split('\n');
-			const dataTableBody = document.getElementById('dataTable').querySelector('tbody');
-			let summaryTableBody = document.getElementById('summaryTable').querySelector('tbody');
+            const data = document.getElementById('dataInput').value;
+            const lines = data.split('\n');
+            const dataTableBody = document.getElementById('dataTable').querySelector('tbody');
+            let summaryTableBody = document.getElementById('summaryTable').querySelector('tbody');
 
-			dataTableBody.innerHTML = ''; // Clear existing rows
-			if (!summaryTableBody) {
-				const summaryTable = document.getElementById('summaryTable');
-				summaryTableBody = document.createElement('tbody');
-				summaryTable.appendChild(summaryTableBody);
-			} else {
-				summaryTableBody.innerHTML = ''; // Clear existing rows
-			}
+            dataTableBody.innerHTML = ''; // Clear existing rows
+            if (!summaryTableBody) {
+                const summaryTable = document.getElementById('summaryTable');
+                summaryTableBody = document.createElement('tbody');
+                summaryTable.appendChild(summaryTableBody);
+            } else {
+                summaryTableBody.innerHTML = ''; // Clear existing rows
+            }
 
-			let index = 1;
-			let packageID = ''; // To keep track of package ID for the current batch of items
-			let weight = 0; // To keep track of total weight for the current batch of items
+            let index = 1;
+            let packageID = ''; // To keep track of package ID for the current batch of items
+            let weight = 0; // To keep track of total weight for the current batch of items
 
-			for (let i = 0; i < lines.length; i++) {
-				const line = lines[i].trim();
-				if (line.length === 0) continue;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.length === 0) continue;
 
-				// Check if the line contains '# Thông tin kiện' to determine the type of data
-				if (line.startsWith('# Thông tin kiện')) {
-					// If it's package information, reset the packageID and weight
-					packageID = '';
-					weight = 0;
-				} else {
-					// If it's order information or package details, parse and process accordingly
-					const parts = line.split(': ');
-					if (parts.length === 2) {
-						const key = parts[0].trim();
-						const value = parts[1].trim();
+                if (line.startsWith('# Thông tin kiện')) {
+                    packageID = '';
+                    weight = 0;
+                } else {
+                    const parts = line.split(': ');
+                    if (parts.length === 2) {
+                        const key = parts[0].trim();
+                        const value = parts[1].trim();
 
-						if (key === 'Mã kiện') {
-							packageID = value;
-						} else if (key === 'Cân nặng') {
-							weight += parseFloat(value.split(' ')[0]);
-						}
+                        if (key === 'Mã kiện') {
+                            packageID = value;
+                        } else if (key === 'Cân nặng') {
+                            weight += parseFloat(value.split(' ')[0]);
+                        }
 
-						// If it's the last line of package details, add it to the table
-						if (key === 'Cân nặng') {
-							addRowToTable(index++, packageID, value, dataTableBody, summaryTableBody);
-						}
-					}
-				}
-			}
-		}
+                        if (key === 'Cân nặng') {
+                            addRowToTable(index++, packageID, value, dataTableBody, summaryTableBody);
+                        }
+                    }
+                }
+            }
 
+            storeData();
+        }
 
         function addRowToTable(index, orderID, weight, dataTableBody, summaryTableBody) {
             const row = document.createElement('tr');
 
-            // Create index cell
             const indexCell = document.createElement('td');
             indexCell.textContent = index;
             row.appendChild(indexCell);
 
-            // Create order ID cell
             const orderIDCell = document.createElement('td');
             orderIDCell.textContent = orderID;
             row.appendChild(orderIDCell);
 
-            // Create weight cell
             const weightCell = document.createElement('td');
             weightCell.textContent = weight;
             row.appendChild(weightCell);
 
-            // Create checkbox cell
             const checkboxCell = document.createElement('td');
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -182,7 +177,6 @@
             checkboxCell.appendChild(checkbox);
             row.appendChild(checkboxCell);
 
-            // Append row to data table
             dataTableBody.appendChild(row);
         }
 
@@ -190,26 +184,63 @@
             const summaryTableBody = document.getElementById('summaryTable').querySelector('tbody');
             const row = document.createElement('tr');
 
-            // Create index cell
             const indexCell = document.createElement('td');
             indexCell.textContent = summaryIndex++;
             row.appendChild(indexCell);
 
-            // Create order ID cell
             const orderIDCell = document.createElement('td');
             orderIDCell.textContent = orderID;
             row.appendChild(orderIDCell);
 
-            // Create weight cell
             const weightCell = document.createElement('td');
             weightCell.textContent = weight;
             row.appendChild(weightCell);
 
-            // Append row to summary table
             summaryTableBody.appendChild(row);
-
-            // Display summary table
             document.getElementById('summaryTable').style.display = 'table';
+
+            storeData();
+        }
+
+        function storeData() {
+            const dataTableBody = document.getElementById('dataTable').querySelector('tbody').innerHTML;
+            const summaryTableBody = document.getElementById('summaryTable').querySelector('tbody').innerHTML;
+            localStorage.setItem('dataTable', dataTableBody);
+            localStorage.setItem('summaryTable', summaryTableBody);
+            localStorage.setItem('summaryIndex', summaryIndex);
+        }
+
+        function loadStoredData() {
+            const storedDataTable = localStorage.getItem('dataTable');
+            const storedSummaryTable = localStorage.getItem('summaryTable');
+            const storedSummaryIndex = localStorage.getItem('summaryIndex');
+
+            if (storedDataTable) {
+                document.getElementById('dataTable').querySelector('tbody').innerHTML = storedDataTable;
+            }
+
+            if (storedSummaryTable) {
+                document.getElementById('summaryTable').querySelector('tbody').innerHTML = storedSummaryTable;
+                document.getElementById('summaryTable').style.display = 'table';
+            }
+
+            if (storedSummaryIndex) {
+                summaryIndex = parseInt(storedSummaryIndex, 10);
+            }
+
+            // Add event listeners to checkboxes in loaded rows
+            const checkboxes = document.getElementById('dataTable').querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const row = checkbox.closest('tr');
+                    const orderID = row.cells[1].textContent;
+                    const weight = row.cells[2].textContent;
+                    if (this.checked) {
+                        row.remove();
+                        addToSummaryTable(orderID, weight);
+                    }
+                });
+            });
         }
     </script>
 </body>
