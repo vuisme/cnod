@@ -75,6 +75,7 @@
         <textarea id="dataInput" placeholder="Paste your data here..."></textarea>
         <button onclick="processData()">Kiểm kê</button>
     </div>
+    <button onclick="checkAllOrders()">Kiểm tra toàn bộ</button>
     <table id="dataTable">
         <thead>
             <tr>
@@ -82,8 +83,8 @@
                 <th>Mã đơn hàng</th>
                 <th>Trọng lượng</th>
                 <th>Chọn</th>
+                <th>Thuộc tính & Số lượng</th>
                 <th>Hình ảnh</th>
-                <th>Kiểm tra</th>
             </tr>
         </thead>
         <tbody>
@@ -127,6 +128,8 @@
             let index = 1;
             let packageID = ''; // To keep track of package ID for the current batch of items
             let weight = 0; // To keep track of total weight for the current batch of items
+            let varValue = '';
+            let slValue = '';
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
@@ -135,6 +138,8 @@
                 if (line.startsWith('# Thông tin kiện')) {
                     packageID = '';
                     weight = 0;
+                    varValue = '';
+                    slValue = '';
                 } else {
                     const parts = line.split(': ');
                     if (parts.length === 2) {
@@ -145,10 +150,14 @@
                             packageID = value;
                         } else if (key === 'Cân nặng') {
                             weight += parseFloat(value.split(' ')[0]);
+                        } else if (key === 'Thuộc tính') {
+                            varValue = value;
+                        } else if (key === 'Số lượng') {
+                            slValue = value;
                         }
 
                         if (key === 'Cân nặng') {
-                            addRowToTable(index++, packageID, value, dataTableBody, summaryTableBody);
+                            addRowToTable(index++, packageID, value, `${varValue} - ${slValue}`, dataTableBody, summaryTableBody);
                         }
                     }
                 }
@@ -157,7 +166,7 @@
             storeData();
         }
 
-        function addRowToTable(index, orderID, weight, dataTableBody, summaryTableBody) {
+        function addRowToTable(index, orderID, weight, attributes, dataTableBody, summaryTableBody) {
             const row = document.createElement('tr');
 
             const indexCell = document.createElement('td');
@@ -184,37 +193,15 @@
             checkboxCell.appendChild(checkbox);
             row.appendChild(checkboxCell);
 
+            const attributesCell = document.createElement('td');
+            attributesCell.textContent = attributes;
+            row.appendChild(attributesCell);
+
             const imageCell = document.createElement('td');
-            imageCell.classList.add('image-cell');
+            imageCell.className = 'image-cell';
             row.appendChild(imageCell);
 
-            const buttonCell = document.createElement('td');
-            const checkButton = document.createElement('button');
-            checkButton.textContent = 'Kiểm tra';
-            checkButton.addEventListener('click', function() {
-                checkOrder(orderID, imageCell);
-            });
-            buttonCell.appendChild(checkButton);
-            row.appendChild(buttonCell);
-
             dataTableBody.appendChild(row);
-        }
-
-        function checkOrder(orderID, imageCell) {
-            fetch(`https://script.google.com/macros/s/AKfycbwjiMSGgRETvo9uGWjKyBgAOYUeiauHWj4vLKmDoq9YJ2JS986ZvBql4ZvxUpZiaDXW/exec?tracking=${orderID}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.imgurl) {
-                        imageCell.innerHTML = `<img src="${data.imgurl}" alt="Order Image">`;
-                    } else {
-                        imageCell.textContent = 'No image available';
-                    }
-                    storeData();
-                })
-                .catch(error => {
-                    console.error('Error fetching order data:', error);
-                    imageCell.textContent = 'Error fetching image';
-                });
         }
 
         function addToSummaryTable(orderID, weight) {
@@ -237,6 +224,27 @@
             document.getElementById('summaryTable').style.display = 'table';
 
             storeData();
+        }
+
+        function checkAllOrders() {
+            fetch('https://script.google.com/macros/s/AKfycbwjiMSGgRETvo9uGWjKyBgAOYUeiauHWj4vLKmDoq9YJ2JS986ZvBql4ZvxUpZiaDXW/exec')
+                .then(response => response.json())
+                .then(data => {
+                    const rows = document.getElementById('dataTable').querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        const trackingNumber = row.cells[1].textContent;
+                        const imageCell = row.cells[5];
+                        const orderData = data.find(order => order.tracking == trackingNumber);
+                        if (orderData && orderData.imgurl) {
+                            imageCell.innerHTML = `<img src="${orderData.imgurl}" alt="Order Image">`;
+                        } else {
+                            imageCell.textContent = 'No image available';
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching order data:', error);
+                });
         }
 
         function storeData() {
@@ -265,7 +273,7 @@
                 summaryIndex = parseInt(storedSummaryIndex, 10);
             }
 
-            // Add event listeners to checkboxes and buttons in loaded rows
+            // Add event listeners to checkboxes in loaded rows
             const checkboxes = document.getElementById('dataTable').querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
@@ -276,16 +284,6 @@
                         row.remove();
                         addToSummaryTable(orderID, weight);
                     }
-                });
-            });
-
-            const checkButtons = document.getElementById('dataTable').querySelectorAll('button');
-            checkButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const row = button.closest('tr');
-                    const orderID = row.cells[1].textContent;
-                    const imageCell = row.cells[4];
-                    checkOrder(orderID, imageCell);
                 });
             });
         }
