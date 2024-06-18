@@ -63,6 +63,11 @@
             border: 1px solid #ccc;
             text-align: left;
         }
+        .image-cell img {
+            max-width: 100px;
+            height: auto;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -77,6 +82,8 @@
                 <th>Mã đơn hàng</th>
                 <th>Trọng lượng</th>
                 <th>Chọn</th>
+                <th>Hình ảnh</th>
+                <th>Kiểm tra</th>
             </tr>
         </thead>
         <tbody>
@@ -177,7 +184,37 @@
             checkboxCell.appendChild(checkbox);
             row.appendChild(checkboxCell);
 
+            const imageCell = document.createElement('td');
+            imageCell.classList.add('image-cell');
+            row.appendChild(imageCell);
+
+            const buttonCell = document.createElement('td');
+            const checkButton = document.createElement('button');
+            checkButton.textContent = 'Kiểm tra';
+            checkButton.addEventListener('click', function() {
+                checkOrder(orderID, imageCell);
+            });
+            buttonCell.appendChild(checkButton);
+            row.appendChild(buttonCell);
+
             dataTableBody.appendChild(row);
+        }
+
+        function checkOrder(orderID, imageCell) {
+            fetch(`https://script.google.com/macros/s/AKfycbwjiMSGgRETvo9uGWjKyBgAOYUeiauHWj4vLKmDoq9YJ2JS986ZvBql4ZvxUpZiaDXW/exec?tracking=${orderID}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.imgurl) {
+                        imageCell.innerHTML = `<img src="${data.imgurl}" alt="Order Image">`;
+                    } else {
+                        imageCell.textContent = 'No image available';
+                    }
+                    storeData();
+                })
+                .catch(error => {
+                    console.error('Error fetching order data:', error);
+                    imageCell.textContent = 'Error fetching image';
+                });
         }
 
         function addToSummaryTable(orderID, weight) {
@@ -228,7 +265,7 @@
                 summaryIndex = parseInt(storedSummaryIndex, 10);
             }
 
-            // Add event listeners to checkboxes in loaded rows
+            // Add event listeners to checkboxes and buttons in loaded rows
             const checkboxes = document.getElementById('dataTable').querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
@@ -239,6 +276,16 @@
                         row.remove();
                         addToSummaryTable(orderID, weight);
                     }
+                });
+            });
+
+            const checkButtons = document.getElementById('dataTable').querySelectorAll('button');
+            checkButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const row = button.closest('tr');
+                    const orderID = row.cells[1].textContent;
+                    const imageCell = row.cells[4];
+                    checkOrder(orderID, imageCell);
                 });
             });
         }
