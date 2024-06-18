@@ -84,6 +84,7 @@
                 <th>Mã đơn hàng</th>
                 <th>Trọng lượng</th>
                 <th>Chọn</th>
+                <th>Thuộc tính & Số lượng</th>
                 <th>Hình ảnh</th>
             </tr>
         </thead>
@@ -128,6 +129,8 @@
             let index = 1;
             let packageID = ''; // To keep track of package ID for the current batch of items
             let weight = 0; // To keep track of total weight for the current batch of items
+            let varValue = '';
+            let slValue = '';
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
@@ -136,6 +139,8 @@
                 if (line.startsWith('# Thông tin kiện')) {
                     packageID = '';
                     weight = 0;
+                    varValue = '';
+                    slValue = '';
                 } else {
                     const parts = line.split(': ');
                     if (parts.length === 2) {
@@ -146,10 +151,14 @@
                             packageID = value;
                         } else if (key === 'Cân nặng') {
                             weight += parseFloat(value.split(' ')[0]);
+                        } else if (key === 'Thuộc tính') {
+                            varValue = value;
+                        } else if (key === 'Số lượng') {
+                            slValue = value;
                         }
 
                         if (key === 'Cân nặng') {
-                            addRowToTable(index++, packageID, value, dataTableBody, summaryTableBody);
+                            addRowToTable(index++, packageID, value, `${varValue} - ${slValue}`, dataTableBody, summaryTableBody);
                         }
                     }
                 }
