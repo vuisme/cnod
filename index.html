@@ -63,11 +63,19 @@
             border: 1px solid #ccc;
             text-align: left;
         }
+        .image-cell {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
         .image-cell img {
             max-width: 100px;
             height: auto;
             border-radius: 4px;
             margin: 5px;
+        }
+        .image-details {
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -84,7 +92,6 @@
                 <th>Mã đơn hàng</th>
                 <th>Trọng lượng</th>
                 <th>Chọn</th>
-                <th>Thuộc tính & Số lượng</th>
                 <th>Hình ảnh</th>
             </tr>
         </thead>
@@ -129,8 +136,6 @@
             let index = 1;
             let packageID = ''; // To keep track of package ID for the current batch of items
             let weight = 0; // To keep track of total weight for the current batch of items
-            let varValue = '';
-            let slValue = '';
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
@@ -139,8 +144,6 @@
                 if (line.startsWith('# Thông tin kiện')) {
                     packageID = '';
                     weight = 0;
-                    varValue = '';
-                    slValue = '';
                 } else {
                     const parts = line.split(': ');
                     if (parts.length === 2) {
@@ -151,14 +154,10 @@
                             packageID = value;
                         } else if (key === 'Cân nặng') {
                             weight += parseFloat(value.split(' ')[0]);
-                        } else if (key === 'Thuộc tính') {
-                            varValue = value;
-                        } else if (key === 'Số lượng') {
-                            slValue = value;
                         }
 
                         if (key === 'Cân nặng') {
-                            addRowToTable(index++, packageID, value, `${varValue} - ${slValue}`, dataTableBody, summaryTableBody);
+                            addRowToTable(index++, packageID, value, dataTableBody, summaryTableBody);
                         }
                     }
                 }
@@ -167,7 +166,7 @@
             storeData();
         }
 
-        function addRowToTable(index, orderID, weight, attributes, dataTableBody, summaryTableBody) {
+        function addRowToTable(index, orderID, weight, dataTableBody, summaryTableBody) {
             const row = document.createElement('tr');
 
             const indexCell = document.createElement('td');
@@ -193,10 +192,6 @@
             });
             checkboxCell.appendChild(checkbox);
             row.appendChild(checkboxCell);
-
-            const attributesCell = document.createElement('td');
-            attributesCell.textContent = attributes;
-            row.appendChild(attributesCell);
 
             const imageCell = document.createElement('td');
             imageCell.className = 'image-cell';
@@ -234,7 +229,7 @@
                     const rows = document.getElementById('dataTable').querySelectorAll('tbody tr');
                     rows.forEach(row => {
                         const trackingNumber = row.cells[1].textContent;
-                        const imageCell = row.cells[5];
+                        const imageCell = row.cells[4];
                         const matchingOrders = data.filter(order => order.tracking == trackingNumber);
                         imageCell.innerHTML = '';
                         if (matchingOrders.length > 0) {
@@ -244,6 +239,11 @@
                                     img.src = order.imgurl;
                                     img.alt = 'Order Image';
                                     imageCell.appendChild(img);
+
+                                    const details = document.createElement('div');
+                                    details.className = 'image-details';
+                                    details.textContent = `${order.var} - ${order.sl}`;
+                                    imageCell.appendChild(details);
                                 }
                             });
                         } else {
