@@ -67,6 +67,7 @@
             max-width: 100px;
             height: auto;
             border-radius: 4px;
+            margin: 5px;
         }
     </style>
 </head>
@@ -234,9 +235,17 @@
                     rows.forEach(row => {
                         const trackingNumber = row.cells[1].textContent;
                         const imageCell = row.cells[5];
-                        const orderData = data.find(order => order.tracking == trackingNumber);
-                        if (orderData && orderData.imgurl) {
-                            imageCell.innerHTML = `<img src="${orderData.imgurl}" alt="Order Image">`;
+                        const matchingOrders = data.filter(order => order.tracking == trackingNumber);
+                        imageCell.innerHTML = '';
+                        if (matchingOrders.length > 0) {
+                            matchingOrders.forEach(order => {
+                                if (order.imgurl) {
+                                    const img = document.createElement('img');
+                                    img.src = order.imgurl;
+                                    img.alt = 'Order Image';
+                                    imageCell.appendChild(img);
+                                }
+                            });
                         } else {
                             imageCell.textContent = 'No image available';
                         }
